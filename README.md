@@ -1,6 +1,6 @@
 1) 전체 아키텍트 개요
 
-<img width="897" height="1443" alt="image" src="https://github.com/user-attachments/assets/39ff64ff-6241-49ac-9bec-f056f24c7842" />
+<img width="600" height="1000" alt="image" src="https://github.com/user-attachments/assets/39ff64ff-6241-49ac-9bec-f056f24c7842" />
 
 
 [ Figma GUI Design ]
