@@ -8,7 +8,7 @@
     "outDir": ".",
     "skipLibCheck": true
   },
-  "include": ["code.ts"],
+  "include": ["*.ts"],
   "exclude": ["node_modules"]
 }
 

@@ -2,7 +2,7 @@
   "name": "Design to Glance",
   "id": "design-to-glance",
   "api": "1.0.0",
-  "main": "code.js",
+  "main": "main.js",
   "ui": "ui.html",
   "editorType": ["figma"]
 }
