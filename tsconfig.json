@@ -2,13 +2,13 @@
   "compilerOptions": {
     "target": "es6",
     "lib": ["es6"],
-    "module": "commonjs",
+    "module": "none",
     "strict": true,
     "types": ["@figma/plugin-typings"],
     "outDir": ".",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "baseUrl":"./src"
   },
-  "include": ["*.ts"],
   "exclude": ["node_modules"]
 }
 

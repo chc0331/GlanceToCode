@@ -76,6 +76,18 @@
          - Android Studio에서 바로 붙여넣기 가능
 
 
+※※※ 개발 구조 ※※※
+- Layered Architecture
+
+UI Layer (Figma Plugin UI)
+ ↓
+Application Layer (Controller)
+ ↓
+Domain Layer (Mapping Logic)
+ ↓
+Infrastructure Layer (Code Generator, File Export)
+
+
 
 ※※※ 개발 로드맵 ※※※
    
@@ -92,3 +104,21 @@
    Phase 3 – AI 변환 (선택)
       - 복잡한 레이아웃, 조건부 구성 처리
       - Pix2Struct 또는 LLM 활용 가능
+
+
+
+📁 pipeline/
+├── types.ts                    # 공통 타입 정의
+├── pipeline_runner.ts          # 파이프라인 실행기
+└── stages/
+    ├── node_extractor.ts       # Stage 1: Figma 노드 추출
+    ├── mapping_engine.ts       # Stage 2: Figma → Glance 매핑
+    ├── code_generator.ts       # Stage 3: 코드 생성
+    └── output_stage.ts         # Stage 4: 결과 출력
+
+
+🔄 Pipeline Flow
+Node Extractor: Figma 선택된 노드들을 분석하여 구조화된 데이터로 추출
+Mapping Engine: Figma 노드를 Jetpack Glance 컴포넌트로 변환
+Code Generator: Glance 컴포넌트를 실제 Kotlin 코드로 생성
+Output Stage: UI에 결과 표시 및 사용자 인터랙션 처리
