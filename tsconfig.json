@@ -8,8 +8,7 @@
     "outDir": ".",
     "skipLibCheck": true,
     "baseUrl":"./src"
-  },
-  "exclude": ["node_modules"]
+  }
 }
 
 
