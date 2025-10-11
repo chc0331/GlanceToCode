@@ -1,5 +1,5 @@
 // Main plugin entry point
-import {runPipeline} from "./pipeline/run_pipeline";
+import {runPipeline} from "./run_pipeline";
 
 figma.on("run", async () => {
   try {

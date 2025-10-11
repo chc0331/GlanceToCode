@@ -2,13 +2,11 @@
   "compilerOptions": {
     "target": "es6",
     "lib": ["es6"],
-    "module": "none",
     "strict": true,
     "types": ["@figma/plugin-typings"],
     "outDir": ".",
     "skipLibCheck": true,
-    "baseUrl":"./src"
-  }
+  },
+    "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules"]
 }
-
-
