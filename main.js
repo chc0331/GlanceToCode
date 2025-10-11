@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  // src/run_pipeline.ts
+  // src/extract.ts
   function extractNode(node) {
     const baseNode = {
       id: node.id,
@@ -38,6 +38,8 @@
     }
     return baseNode;
   }
+
+  // src/map.ts
   function mapNodeToComponent(node) {
     switch (node.type) {
       case "RECTANGLE":
@@ -157,6 +159,8 @@
     }
     return "Alignment.TopStart";
   }
+
+  // src/generate.ts
   function generateImports() {
     return `import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
@@ -308,6 +312,8 @@ import androidx.glance.text.*`;
 `;
     return code;
   }
+
+  // src/run_pipeline.ts
   async function runPipeline() {
     console.log("\u{1F680} Pipeline started");
     try {
