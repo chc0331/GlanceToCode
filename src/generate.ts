@@ -1,3 +1,10 @@
+// ======================================================
+// generate.ts
+// 역할: 중간 표현인 `GlanceComponent` 리스트를 받아 최종 코드 문자열을 생성합니다.
+// - 필요한 import 블럭 생성
+// - 컴포넌트 타입별 코드 생성(Box, Column, Row, Text)
+// - 들여쓰기와 포맷을 관리하여 최종 Kotlin/Compose 코드 반환
+// ======================================================
 import { GlanceComponent } from './types';
 
 export function generateImports(): string {

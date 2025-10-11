@@ -1,3 +1,9 @@
+// ======================================================
+// map.ts
+// 역할: `FigmaNode` 중간 표현을 Glance용 컴포넌트 표현(`GlanceComponent`)으로 변환합니다.
+// - 노드 타입별 매핑(mapRectangleToBox, mapTextToText, mapFrameToContainer)
+// - 레이아웃/정렬/Modifier 문자열 생성
+// ======================================================
 import { FigmaNode, GlanceComponent } from './types';
 
 export function mapNodeToComponent(node: FigmaNode): GlanceComponent | null {

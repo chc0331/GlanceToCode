@@ -1,3 +1,10 @@
+// ======================================================
+// types.ts
+// 역할: 파이프라인에서 사용하는 데이터 타입들을 정의합니다.
+// - Figma에서 추출한 노드(중간 표현)인 `FigmaNode`
+// - 코드 생성에 사용되는 중간 표현 `GlanceComponent`
+// 다른 모듈(extract, map, generate)에서 이 타입을 import 하여 사용합니다.
+// ======================================================
 // Pipeline Types
 export interface FigmaNode {
   id: string;

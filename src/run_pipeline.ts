@@ -1,6 +1,15 @@
 // Design to Code Plugin - Pipeline Architecture
 // Converts Figma designs to Jetpack Glance code
 
+// ======================================================
+// run_pipeline.ts
+// 역할: 파이프라인의 오케스트레이터 역할을 합니다.
+// 1) 현재 선택된 Figma 노드를 추출(extract)
+// 2) 추출한 중간 표현을 Glance 컴포넌트로 매핑(map)
+// 3) 매핑 결과로부터 최종 코드를 생성(generate)
+// 4) UI에 결과를 출력 및 메시지 처리
+// (비즈니스 로직은 extract/map/generate에 위임되어 이 파일은 흐름 제어만 담당)
+// ======================================================
 import { FigmaNode, GlanceComponent } from './types';
 import { extractNode } from './extract';
 import { mapNodeToComponent } from './map';

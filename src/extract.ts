@@ -1,3 +1,10 @@
+// ======================================================
+// extract.ts
+// 역할: Figma SceneNode에서 필요한 속성을 추출하여
+// 중간 표현인 `FigmaNode` 객체로 변환합니다.
+// - 위치, 크기, fills, 텍스트/레이아웃 관련 속성 등 추출
+// - 재귀적으로 자식 노드도 추출하여 트리 구조 생성
+// ======================================================
 import { FigmaNode } from './types';
 
 export function extractNode(node: SceneNode): FigmaNode | null {
