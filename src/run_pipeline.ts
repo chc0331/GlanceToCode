@@ -31,6 +31,7 @@ export async function runPipeline(): Promise<void> {
     // Stage 1: Extract Figma Nodes
     const nodes: FigmaNode[] = [];
     for (const node of selection) {
+      console.log("Selected nodes : ", node);
       const extractedNode = extractNode(node);
       if (extractedNode) {
         nodes.push(extractedNode);

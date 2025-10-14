@@ -75,20 +75,6 @@
          - 코드 클립보드 복사
          - Android Studio에서 바로 붙여넣기 가능
 
-
-※※※ 개발 구조 ※※※
-- Layered Architecture
-
-UI Layer (Figma Plugin UI)
- ↓
-Application Layer (Controller)
- ↓
-Domain Layer (Mapping Logic)
- ↓
-Infrastructure Layer (Code Generator, File Export)
-
-
-
 ※※※ 개발 로드맵 ※※※
    
    Phase 1 – PoC
@@ -122,3 +108,56 @@ Node Extractor: Figma 선택된 노드들을 분석하여 구조화된 데이터
 Mapping Engine: Figma 노드를 Jetpack Glance 컴포넌트로 변환
 Code Generator: Glance 컴포넌트를 실제 Kotlin 코드로 생성
 Output Stage: UI에 결과 표시 및 사용자 인터랙션 처리
+
+
+# Figma Node <-> Glance Node
+
+## 🧱 1. Jetpack Glance 지원 레이아웃 / 컴포넌트
+
+| Glance 컴포저블 / 레이아웃 | 역할 / 특성 | 비고 / 제약 |
+|---|---|---|
+| `Column` | 수직 배치 (vertical stacking) | 자식 뷰들을 위→아래 순으로 배치 |
+| `Row` | 수평 배치 (horizontal stacking) | 자식 뷰들을 왼쪽→오른쪽 순으로 배치 |
+| `Box` | 겹침 / 포개기 | 내부 요소를 겹치거나 정렬 제어 가능 |
+| `Spacer` | 빈 공간 삽입 | 레이아웃 간격 조절용 |
+| `LazyColumn` | 스크롤 가능한 리스트 | 반복 항목 처리용 |
+| `Text` | 텍스트 출력 | 폰트, 크기, 색상 등 제한 있음 |
+| `Image` | 이미지 출력 | 리소스 또는 URL 가능 |
+| `Button` | 클릭 가능한 버튼 | 클릭 액션 정의 필요 |
+| `LinearProgressIndicator` | 선형 진행 표시기 | 진행 상태 표현 |
+| `CircularProgressIndicator` | 원형 진행 표시기 | 진행 상태 표현 |
+
+---
+
+## 🧩 2. Figma 노드 타입
+
+| Figma 노드 타입 | 역할 / 설명 | 주요 속성 / 특징 |
+|---|---|---|
+| `FrameNode` | 레이아웃 컨테이너 | auto-layout 속성 지원, 자식 포함 |
+| `GroupNode` | 단순 그룹화 | 레이아웃 속성 없음 |
+| `ComponentNode` | 컴포넌트 정의 | 재사용 가능한 UI 블록 |
+| `InstanceNode` | Component 인스턴스 | master 속성 상속 |
+| `RectangleNode` | 사각형 도형 | 배경, 카드 등 표현 |
+| `EllipseNode` | 원형 / 타원 도형 | 원형 영역 표현 |
+| `TextNode` | 텍스트 요소 | 폰트, 정렬, 색상, 내용 |
+| `VectorNode` | 벡터 아이콘 / 일러스트 | SVG 기반 그래픽 |
+| `LineNode` | 선 요소 | 구분선, Divider 용도 |
+| `ComponentSetNode` | Variants 집합 | 상태별 컴포넌트 집합 |
+
+---
+
+## 🔁 3. Figma → Jetpack Glance 매핑
+
+| Figma 노드 / 구성 패턴 | 대응 Glance 컴포저블 / 레이아웃 | 비고 / 처리 방식 |
+|---|---|---|
+| FrameNode (Auto-layout: Vertical) | `Column` | spacing 속성 → `verticalArrangement` |
+| FrameNode (Auto-layout: Horizontal) | `Row` | spacing 속성 → `horizontalArrangement` |
+| FrameNode (Absolute position) | `Box` | 겹치는 요소 배치 |
+| Nested Frame 구조 | 중첩된 `Column` / `Row` / `Box` | 복합 배치 구성 |
+| RectangleNode | `Box` + 배경 색상 | 배경 박스 or 카드 표현 |
+| TextNode | `Text` | 텍스트 내용 및 스타일 변환 |
+| ImageNode / VectorNode | `Image` | 리소스 참조 or URL |
+| 간격용 Frame / Spacer | `Spacer` | auto-layout gap 변환 |
+| 버튼 디자인 (사각형 + 텍스트/아이콘) | `Button` 내부에 `Text` / `Image` | onClick 액션 연결 |
+| 반복 Frame 구조 | `LazyColumn` + `items {}` | 반복 패턴 감지 |
+| 복잡한 아이콘 / 벡터 그래픽 | `Image` or `VectorDrawable` | SVG → Android Vector 변환 |

@@ -325,6 +325,7 @@ import androidx.glance.text.*`;
       }
       const nodes = [];
       for (const node of selection) {
+        console.log("Selected nodes : ", node);
         const extractedNode = extractNode(node);
         if (extractedNode) {
           nodes.push(extractedNode);
