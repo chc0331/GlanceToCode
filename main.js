@@ -29,22 +29,33 @@
   var FigmaColumnNode = class extends FigmaFrameNode {
   };
 
-  // src/figmanode/figmaImageNode.ts
-  var FigmaImageNode = class extends FigmaBaseNode {
-    constructor(id, name, visible, width, height, x, y, imageUrl, contentScale) {
-      super(id, name, visible, width, height, x, y);
-      this.imageUrl = imageUrl;
-      this.contentScale = contentScale;
+  // src/nodeparser/strategies/frameStrategy.ts
+  var frameStrategy = {
+    nodeType: "FRAME",
+    parse(node, parseChild) {
+      const layoutMode = node.layoutMode || "NONE";
+      const children = "children" in node ? node.children.map((c) => parseChild(c)).filter((n) => n !== null) : [];
+      const backgroundColor = (() => {
+        if (!Array.isArray(node.backgrounds) || node.backgrounds.length === 0)
+          return void 0;
+        const b = node.backgrounds[0];
+        if (b && b.type === "SOLID")
+          return rgbToHex(b.color);
+        return void 0;
+      })();
+      if (layoutMode === "HORIZONTAL")
+        return new FigmaRowNode(node.id, node.name, node.visible, node.width, node.height, node.x, node.y, children, backgroundColor);
+      if (layoutMode === "VERTICAL")
+        return new FigmaColumnNode(node.id, node.name, node.visible, node.width, node.height, node.x, node.y, children, backgroundColor);
+      return new FigmaBoxNode(node.id, node.name, node.visible, node.width, node.height, node.x, node.y, children, backgroundColor);
     }
   };
-
-  // src/figmanode/figmaEllipseNode.ts
-  var FigmaEllipseNode = class extends FigmaBaseNode {
-    constructor(id, name, visible, width, height, x, y, fillColor) {
-      super(id, name, visible, width, height, x, y);
-      this.fillColor = fillColor;
-    }
-  };
+  function rgbToHex(color) {
+    const r = Math.round(color.r * 255).toString(16).padStart(2, "0");
+    const g = Math.round(color.g * 255).toString(16).padStart(2, "0");
+    const b = Math.round(color.b * 255).toString(16).padStart(2, "0");
+    return `#${r}${g}${b}`;
+  }
 
   // src/figmanode/figmaRectangleNode.ts
   var FigmaRectangleNode = class extends FigmaBaseNode {
@@ -54,6 +65,29 @@
       this.cornerRadius = cornerRadius;
     }
   };
+
+  // src/nodeparser/strategies/rectangleStrategy.ts
+  var rectangleStrategy = {
+    nodeType: "RECTANGLE",
+    parse(node) {
+      const fillColor = (() => {
+        const fills = node.fills;
+        if (!Array.isArray(fills) || fills.length === 0)
+          return void 0;
+        const p = fills[0];
+        if (p && p.type === "SOLID")
+          return rgbToHex2(p.color);
+        return void 0;
+      })();
+      return new FigmaRectangleNode(node.id, node.name, node.visible, node.width, node.height, node.x, node.y, fillColor, void 0);
+    }
+  };
+  function rgbToHex2(color) {
+    const r = Math.round(color.r * 255).toString(16).padStart(2, "0");
+    const g = Math.round(color.g * 255).toString(16).padStart(2, "0");
+    const b = Math.round(color.b * 255).toString(16).padStart(2, "0");
+    return `#${r}${g}${b}`;
+  }
 
   // src/figmanode/figmaTextNode.ts
   var FigmaTextNode = class extends FigmaBaseNode {
@@ -66,187 +100,133 @@
     }
   };
 
-  // src/nodeparser/FigmaNodeParser.ts
-  function parseFigmaNode(node) {
-    switch (node.type) {
-      case "FRAME":
-      case "GROUP":
-        return parseFrameNode(node);
-      case "RECTANGLE":
-        return parseRectangleNode(node);
-      case "TEXT":
-        return parseTextNode(node);
-      case "ELLIPSE":
-        return parseEllipseNode(node);
-      case "LINE":
-        return parseLineNode(node);
-      case "COMPONENT":
-      case "INSTANCE":
-        return parseImageNode(node);
-      default:
-        return null;
-    }
-  }
-  function parseFrameNode(node) {
-    const layoutMode = node.layoutMode || "NONE";
-    const children = "children" in node ? node.children.map((child) => parseFigmaNode(child)).filter((n) => n !== null) : [];
-    const backgroundColor = (() => {
-      if (!Array.isArray(node.backgrounds) || node.backgrounds.length === 0)
-        return void 0;
-      const b = node.backgrounds[0];
-      if (b && b.type === "SOLID")
-        return rgbToHex(b.color);
-      return void 0;
-    })();
-    if (layoutMode === "HORIZONTAL")
-      return new FigmaRowNode(
-        node.id,
-        node.name,
-        node.visible,
-        node.width,
-        node.height,
-        node.x,
-        node.y,
-        children,
-        backgroundColor
-      );
-    if (layoutMode === "VERTICAL")
-      return new FigmaColumnNode(
-        node.id,
-        node.name,
-        node.visible,
-        node.width,
-        node.height,
-        node.x,
-        node.y,
-        children,
-        backgroundColor
-      );
-    return new FigmaBoxNode(
-      node.id,
-      node.name,
-      node.visible,
-      node.width,
-      node.height,
-      node.x,
-      node.y,
-      children,
-      backgroundColor
-    );
-  }
-  function parseRectangleNode(node) {
-    const fillColor = (() => {
-      if (!Array.isArray(node.fills) || node.fills.length === 0)
-        return void 0;
-      const p = node.fills[0];
-      if (p && p.type === "SOLID")
-        return rgbToHex(p.color);
-      return void 0;
-    })();
-    return new FigmaRectangleNode(
-      node.id,
-      node.name,
-      node.visible,
-      node.width,
-      node.height,
-      node.x,
-      node.y,
-      fillColor,
-      void 0
-    );
-  }
-  function parseTextNode(node) {
-    const color = (() => {
-      if (!Array.isArray(node.fills) || node.fills.length === 0)
+  // src/nodeparser/strategies/textStrategy.ts
+  var textStrategy = {
+    nodeType: "TEXT",
+    parse(node) {
+      const color = (() => {
+        const fills = node.fills;
+        if (!Array.isArray(fills) || fills.length === 0)
+          return "#000000";
+        const p = fills[0];
+        if (p && p.type === "SOLID")
+          return rgbToHex3(p.color);
         return "#000000";
-      const p = node.fills[0];
-      if (p && p.type === "SOLID")
-        return rgbToHex(p.color);
-      return "#000000";
-    })();
-    const fontSize = typeof node.fontSize === "number" ? node.fontSize : 14;
-    const align = node.textAlignHorizontal === "CENTER" ? "Center" : node.textAlignHorizontal === "RIGHT" ? "Right" : "Left";
-    return new FigmaTextNode(
-      node.id,
-      node.name,
-      node.visible,
-      node.width,
-      node.height,
-      node.x,
-      node.y,
-      node.characters,
-      fontSize,
-      color,
-      align
-    );
-  }
-  function parseImageNode(node) {
-    let imageUrl = "";
-    const fills = node.fills;
-    if (Array.isArray(fills) && fills.length > 0 && fills[0].imageHash) {
-      imageUrl = fills[0].imageHash;
+      })();
+      const fontSize = typeof node.fontSize === "number" ? node.fontSize : 14;
+      const align = node.textAlignHorizontal === "CENTER" ? "Center" : node.textAlignHorizontal === "RIGHT" ? "Right" : "Left";
+      return new FigmaTextNode(node.id, node.name, node.visible, node.width, node.height, node.x, node.y, node.characters, fontSize, color, align);
     }
-    return new FigmaImageNode(
-      node.id,
-      node.name,
-      node.visible,
-      node.width,
-      node.height,
-      node.x,
-      node.y,
-      imageUrl,
-      "Fit"
-    );
-  }
-  function parseEllipseNode(node) {
-    const fillColor = (() => {
-      const fills = node.fills;
-      if (!Array.isArray(fills) || fills.length === 0)
-        return void 0;
-      const p = fills[0];
-      if (p && p.type === "SOLID")
-        return rgbToHex(p.color);
-      return void 0;
-    })();
-    return new FigmaEllipseNode(
-      node.id,
-      node.name,
-      node.visible,
-      node.width,
-      node.height,
-      node.x,
-      node.y,
-      fillColor
-    );
-  }
-  function parseLineNode(node) {
-    const strokeColor = (() => {
-      const strokes = node.strokes;
-      if (!Array.isArray(strokes) || strokes.length === 0)
-        return void 0;
-      const s = strokes[0];
-      if (s && s.type === "SOLID")
-        return rgbToHex(s.color);
-      return void 0;
-    })();
-    return new FigmaRectangleNode(
-      node.id,
-      node.name,
-      node.visible,
-      // width/height might be zero for lines; ensure at least 1
-      node.width || 1,
-      node.height || 1,
-      node.x,
-      node.y,
-      strokeColor,
-      void 0
-    );
-  }
-  function rgbToHex(color) {
+  };
+  function rgbToHex3(color) {
     const r = Math.round(color.r * 255).toString(16).padStart(2, "0");
     const g = Math.round(color.g * 255).toString(16).padStart(2, "0");
     const b = Math.round(color.b * 255).toString(16).padStart(2, "0");
     return `#${r}${g}${b}`;
+  }
+
+  // src/figmanode/figmaEllipseNode.ts
+  var FigmaEllipseNode = class extends FigmaBaseNode {
+    constructor(id, name, visible, width, height, x, y, fillColor) {
+      super(id, name, visible, width, height, x, y);
+      this.fillColor = fillColor;
+    }
+  };
+
+  // src/nodeparser/strategies/ellipseStrategy.ts
+  var ellipseStrategy = {
+    nodeType: "ELLIPSE",
+    parse(node) {
+      const fillColor = (() => {
+        const fills = node.fills;
+        if (!Array.isArray(fills) || fills.length === 0)
+          return void 0;
+        const p = fills[0];
+        if (p && p.type === "SOLID")
+          return rgbToHex4(p.color);
+        return void 0;
+      })();
+      return new FigmaEllipseNode(node.id, node.name, node.visible, node.width, node.height, node.x, node.y, fillColor);
+    }
+  };
+  function rgbToHex4(color) {
+    const r = Math.round(color.r * 255).toString(16).padStart(2, "0");
+    const g = Math.round(color.g * 255).toString(16).padStart(2, "0");
+    const b = Math.round(color.b * 255).toString(16).padStart(2, "0");
+    return `#${r}${g}${b}`;
+  }
+
+  // src/nodeparser/strategies/lineStrategy.ts
+  var lineStrategy = {
+    nodeType: "LINE",
+    parse(node) {
+      const strokeColor = (() => {
+        const strokes = node.strokes;
+        if (!Array.isArray(strokes) || strokes.length === 0)
+          return void 0;
+        const s = strokes[0];
+        if (s && s.type === "SOLID")
+          return rgbToHex5(s.color);
+        return void 0;
+      })();
+      return new FigmaRectangleNode(node.id, node.name, node.visible, node.width || 1, node.height || 1, node.x, node.y, strokeColor, void 0);
+    }
+  };
+  function rgbToHex5(color) {
+    const r = Math.round(color.r * 255).toString(16).padStart(2, "0");
+    const g = Math.round(color.g * 255).toString(16).padStart(2, "0");
+    const b = Math.round(color.b * 255).toString(16).padStart(2, "0");
+    return `#${r}${g}${b}`;
+  }
+
+  // src/figmanode/figmaImageNode.ts
+  var FigmaImageNode = class extends FigmaBaseNode {
+    constructor(id, name, visible, width, height, x, y, imageUrl, contentScale) {
+      super(id, name, visible, width, height, x, y);
+      this.imageUrl = imageUrl;
+      this.contentScale = contentScale;
+    }
+  };
+
+  // src/nodeparser/strategies/imageStrategy.ts
+  var imageStrategy = {
+    nodeType: "COMPONENT",
+    parse(node) {
+      let imageUrl = "";
+      const fills = node.fills;
+      if (Array.isArray(fills) && fills.length > 0 && fills[0].imageHash) {
+        imageUrl = fills[0].imageHash;
+      }
+      return new FigmaImageNode(node.id, node.name, node.visible, node.width, node.height, node.x, node.y, imageUrl, "Fit");
+    }
+  };
+  var instanceImageStrategy = {
+    nodeType: "INSTANCE",
+    parse: imageStrategy.parse
+  };
+
+  // src/nodeparser/FigmaNodeParser.ts
+  var parserRegistry = /* @__PURE__ */ new Map();
+  function registerParserStrategy(nodeType, fn) {
+    parserRegistry.set(nodeType, fn);
+  }
+  function parseFigmaNode(node) {
+    const handler = parserRegistry.get(node.type);
+    if (handler)
+      return handler(node);
+    return null;
+  }
+  var builtIn = [
+    frameStrategy,
+    rectangleStrategy,
+    textStrategy,
+    ellipseStrategy,
+    lineStrategy,
+    imageStrategy,
+    instanceImageStrategy
+  ];
+  for (const s of builtIn) {
+    registerParserStrategy(s.nodeType, (n) => s.parse(n, parseFigmaNode));
   }
   function parseSelectedNodes() {
     const selection = figma.currentPage.selection;

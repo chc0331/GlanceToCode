@@ -1,140 +1,32 @@
-import { FigmaBoxNode, FigmaColumnNode, FigmaRowNode } from "../figmanode/figmaFrameNode";
-import { FigmaImageNode } from "../figmanode/figmaImageNode";
-import { FigmaEllipseNode } from "../figmanode/figmaEllipseNode";
-import { FigmaRectangleNode } from "../figmanode/figmaRectangleNode";
-import { FigmaTextNode } from "../figmanode/figmaTextNode";
-/**
- * SceneNode → FigmaBaseNode 구조로 파싱
- */
+import { frameStrategy } from "./strategies/frameStrategy";
+import { rectangleStrategy } from "./strategies/rectangleStrategy";
+import { textStrategy } from "./strategies/textStrategy";
+import { ellipseStrategy } from "./strategies/ellipseStrategy";
+import { lineStrategy } from "./strategies/lineStrategy";
+import { imageStrategy, instanceImageStrategy } from "./strategies/imageStrategy";
+const parserRegistry = new Map();
+export function registerParserStrategy(nodeType, fn) {
+    parserRegistry.set(nodeType, fn);
+}
+// parseFigmaNode now dispatches to a registered strategy
 export function parseFigmaNode(node) {
-    switch (node.type) {
-        case "FRAME":
-        case "GROUP":
-            return parseFrameNode(node);
-        case "RECTANGLE":
-            return parseRectangleNode(node);
-        case "TEXT":
-            return parseTextNode(node);
-        case "ELLIPSE":
-            return parseEllipseNode(node);
-        case "LINE":
-            // 선은 간단한 Rectangle 혹은 Spacer로 근사
-            return parseLineNode(node);
-        case "COMPONENT":
-        case "INSTANCE":
-            // 이미지나 외부 컴포넌트로 취급
-            return parseImageNode(node);
-        default:
-            return null;
-    }
+    const handler = parserRegistry.get(node.type);
+    if (handler)
+        return handler(node);
+    return null;
 }
-/**
- * FrameNode → Box / Row / Column으로 변환
- */
-function parseFrameNode(node) {
-    const layoutMode = node.layoutMode || "NONE";
-    const children = "children" in node
-        ? node.children
-            .map((child) => parseFigmaNode(child))
-            .filter((n) => n !== null)
-        : [];
-    const backgroundColor = (() => {
-        if (!Array.isArray(node.backgrounds) || node.backgrounds.length === 0)
-            return undefined;
-        const b = node.backgrounds[0];
-        if (b && b.type === 'SOLID')
-            return rgbToHex(b.color);
-        return undefined;
-    })();
-    if (layoutMode === "HORIZONTAL")
-        return new FigmaRowNode(node.id, node.name, node.visible, node.width, node.height, node.x, node.y, children, backgroundColor);
-    if (layoutMode === "VERTICAL")
-        return new FigmaColumnNode(node.id, node.name, node.visible, node.width, node.height, node.x, node.y, children, backgroundColor);
-    return new FigmaBoxNode(node.id, node.name, node.visible, node.width, node.height, node.x, node.y, children, backgroundColor);
-}
-/**
- * Rectangle → FigmaRectangleNode
- */
-function parseRectangleNode(node) {
-    const fillColor = (() => {
-        if (!Array.isArray(node.fills) || node.fills.length === 0)
-            return undefined;
-        const p = node.fills[0];
-        if (p && p.type === 'SOLID')
-            return rgbToHex(p.color);
-        return undefined;
-    })();
-    return new FigmaRectangleNode(node.id, node.name, node.visible, node.width, node.height, node.x, node.y, fillColor, undefined);
-}
-/**
- * Text → FigmaTextNode
- */
-function parseTextNode(node) {
-    const color = (() => {
-        if (!Array.isArray(node.fills) || node.fills.length === 0)
-            return "#000000";
-        const p = node.fills[0];
-        if (p && p.type === 'SOLID')
-            return rgbToHex(p.color);
-        return "#000000";
-    })();
-    const fontSize = typeof node.fontSize === 'number' ? node.fontSize : 14;
-    const align = node.textAlignHorizontal === "CENTER" ? "Center" : node.textAlignHorizontal === "RIGHT" ? "Right" : "Left";
-    return new FigmaTextNode(node.id, node.name, node.visible, node.width, node.height, node.x, node.y, node.characters, fontSize, color, align);
-}
-/**
- * Component / Instance → FigmaImageNode (일단 이미지 취급)
- */
-function parseImageNode(node) {
-    let imageUrl = "";
-    const fills = node.fills;
-    if (Array.isArray(fills) && fills.length > 0 && fills[0].imageHash) {
-        imageUrl = fills[0].imageHash;
-    }
-    // default contentScale to 'Fit'
-    return new FigmaImageNode(node.id, node.name, node.visible, node.width, node.height, node.x, node.y, imageUrl, "Fit");
-}
-function parseEllipseNode(node) {
-    const fillColor = (() => {
-        const fills = node.fills;
-        if (!Array.isArray(fills) || fills.length === 0)
-            return undefined;
-        const p = fills[0];
-        if (p && p.type === 'SOLID')
-            return rgbToHex(p.color);
-        return undefined;
-    })();
-    return new FigmaEllipseNode(node.id, node.name, node.visible, node.width, node.height, node.x, node.y, fillColor);
-}
-function parseLineNode(node) {
-    // Represent a line as a thin rectangle approximation
-    const strokeColor = (() => {
-        const strokes = node.strokes;
-        if (!Array.isArray(strokes) || strokes.length === 0)
-            return undefined;
-        const s = strokes[0];
-        if (s && s.type === 'SOLID')
-            return rgbToHex(s.color);
-        return undefined;
-    })();
-    return new FigmaRectangleNode(node.id, node.name, node.visible, 
-    // width/height might be zero for lines; ensure at least 1
-    node.width || 1, node.height || 1, node.x, node.y, strokeColor, undefined);
-}
-/**
- * RGB → HEX 변환 유틸
- */
-function rgbToHex(color) {
-    const r = Math.round(color.r * 255)
-        .toString(16)
-        .padStart(2, "0");
-    const g = Math.round(color.g * 255)
-        .toString(16)
-        .padStart(2, "0");
-    const b = Math.round(color.b * 255)
-        .toString(16)
-        .padStart(2, "0");
-    return `#${r}${g}${b}`;
+// register built-in strategies using adapters that pass parseFigmaNode as the child parser
+const builtIn = [
+    frameStrategy,
+    rectangleStrategy,
+    textStrategy,
+    ellipseStrategy,
+    lineStrategy,
+    imageStrategy,
+    instanceImageStrategy,
+];
+for (const s of builtIn) {
+    registerParserStrategy(s.nodeType, (n) => s.parse(n, parseFigmaNode));
 }
 /**
  * ✅ 현재 선택된 노드들 파싱

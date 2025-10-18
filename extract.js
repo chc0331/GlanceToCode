@@ -3,6 +3,7 @@ export function extractNode(node) {
     // Try to use the richer parser which creates figmanode class instances,
     // then map that structure back into the pipeline's lightweight `FigmaNode` type.
     const parsed = parseFigmaNode(node);
+    console.log("Parsed nodes : ", parsed);
     if (parsed) {
         return mapFigmaBaseNodeToFigmaNode(parsed);
     }
