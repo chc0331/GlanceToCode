@@ -35,7 +35,8 @@
         codeTextarea.value = msg.code;
       }
       if (msg && msg.type === 'parsedTree') {
-        // auto-download parsed tree JSON
+        // auto-download parsed tree JSON (temporarily disabled)
+        /*
         const json = msg.json || '';
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -46,6 +47,7 @@
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
+        */
       }
     };
   </script>

@@ -240,14 +240,14 @@
 
   // src/nodeparser/FigmaNodeParser.ts
   function parseFigmaNode(node) {
-    const handler = parserRegistry.get(node.type);
-    if (handler)
-      return handler(node);
+    const strategy = parserRegistry.get(node.type);
+    if (strategy)
+      return strategy.parse(node, parseFigmaNode);
     return null;
   }
   var parserRegistry = /* @__PURE__ */ new Map();
-  function registerParserStrategy(nodeType, fn) {
-    parserRegistry.set(nodeType, fn);
+  function registerParserStrategy(strategy) {
+    parserRegistry.set(strategy.nodeType, strategy);
   }
   var builtIn = [
     frameStrategy,
@@ -259,7 +259,7 @@
     instanceImageStrategy
   ];
   for (const s of builtIn) {
-    registerParserStrategy(s.nodeType, (n) => s.parse(n, parseFigmaNode));
+    registerParserStrategy(s);
   }
   function parseSelectedNodes() {
     const selection = figma.currentPage.selection;

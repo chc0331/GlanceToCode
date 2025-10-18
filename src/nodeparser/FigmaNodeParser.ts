@@ -10,20 +10,20 @@ import { ParserStrategy } from "./strategies/ParserStrategy";
 
 // parseFigmaNode now dispatches to a registered strategy
 export function parseFigmaNode(node: SceneNode): FigmaBaseNode | null {
-  const handler = parserRegistry.get(node.type);
-  if (handler) return handler(node);
+  const strategy = parserRegistry.get(node.type);
+  if (strategy) return strategy.parse(node, parseFigmaNode as any);
   return null;
 }
 
 /**
  * SceneNode → FigmaBaseNode 구조로 파싱
  */
-type ParserFn = (node: SceneNode) => FigmaBaseNode | null;
+type StrategyRegistry = Map<string, ParserStrategy>;
 
-const parserRegistry: Map<string, ParserFn> = new Map();
+const parserRegistry: StrategyRegistry = new Map();
 
-export function registerParserStrategy(nodeType: string, fn: ParserFn) {
-  parserRegistry.set(nodeType, fn);
+export function registerParserStrategy(strategy: ParserStrategy) {
+  parserRegistry.set(strategy.nodeType, strategy);
 }
 
 // register built-in strategies using adapters that pass parseFigmaNode as the child parser
@@ -38,7 +38,7 @@ const builtIn: ParserStrategy[] = [
 ];
 
 for (const s of builtIn) {
-  registerParserStrategy(s.nodeType, (n: SceneNode) => s.parse(n, parseFigmaNode as any));
+  registerParserStrategy(s);
 }
 
 /**

@@ -6,14 +6,14 @@ import { lineStrategy } from "./strategies/lineStrategy";
 import { imageStrategy, instanceImageStrategy } from "./strategies/imageStrategy";
 // parseFigmaNode now dispatches to a registered strategy
 export function parseFigmaNode(node) {
-    const handler = parserRegistry.get(node.type);
-    if (handler)
-        return handler(node);
+    const strategy = parserRegistry.get(node.type);
+    if (strategy)
+        return strategy.parse(node, parseFigmaNode);
     return null;
 }
 const parserRegistry = new Map();
-export function registerParserStrategy(nodeType, fn) {
-    parserRegistry.set(nodeType, fn);
+export function registerParserStrategy(strategy) {
+    parserRegistry.set(strategy.nodeType, strategy);
 }
 // register built-in strategies using adapters that pass parseFigmaNode as the child parser
 const builtIn = [
@@ -26,7 +26,7 @@ const builtIn = [
     instanceImageStrategy,
 ];
 for (const s of builtIn) {
-    registerParserStrategy(s.nodeType, (n) => s.parse(n, parseFigmaNode));
+    registerParserStrategy(s);
 }
 /**
  * ✅ 현재 선택된 노드들 파싱
