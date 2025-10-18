@@ -12,7 +12,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { extractNode } from './extract';
 import { mapNodeToComponent } from './map';
 import { generateImports, generateComponent } from './generate';
-import { serializeSelectedNodesToJSON } from './nodeparser/FigmaNodeParser';
+import { serializeNodesToJSON, parseSelectedNodes } from './nodeparser/FigmaNodeParser';
 // Main Pipeline Function
 export function runPipeline() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -59,7 +59,7 @@ export function runPipeline() {
             figma.showUI(__html__, { width: 600, height: 500 });
             figma.ui.postMessage({ type: 'code', code });
             // Also serialize parsed tree and send to UI to trigger download
-            const parsedJson = serializeSelectedNodesToJSON(true);
+            const parsedJson = serializeNodesToJSON(parseSelectedNodes(), true);
             if (parsedJson) {
                 // Log parsed JSON for inspection
                 console.log('--- parsed tree JSON START ---');

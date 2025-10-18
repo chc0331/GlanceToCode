@@ -14,7 +14,7 @@ import { FigmaNode, GlanceComponent } from './types';
 import { extractNode } from './extract';
 import { mapNodeToComponent } from './map';
 import { generateImports, generateComponent } from './generate';
-import { serializeSelectedNodesToJSON } from './nodeparser/FigmaNodeParser';
+import { serializeNodesToJSON, parseSelectedNodes } from './nodeparser/FigmaNodeParser';
 
 // Main Pipeline Function
 export async function runPipeline(): Promise<void> {
@@ -70,7 +70,7 @@ export async function runPipeline(): Promise<void> {
     figma.ui.postMessage({ type: 'code', code });
 
     // Also serialize parsed tree and send to UI to trigger download
-    const parsedJson = serializeSelectedNodesToJSON(true);
+  const parsedJson = serializeNodesToJSON(parseSelectedNodes(), true);
     if (parsedJson) {
       // Log parsed JSON for inspection
       console.log('--- parsed tree JSON START ---');

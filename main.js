@@ -205,37 +205,7 @@
     parse: imageStrategy.parse
   };
 
-  // src/nodeparser/FigmaNodeParser.ts
-  var parserRegistry = /* @__PURE__ */ new Map();
-  function registerParserStrategy(nodeType, fn) {
-    parserRegistry.set(nodeType, fn);
-  }
-  function parseFigmaNode(node) {
-    const handler = parserRegistry.get(node.type);
-    if (handler)
-      return handler(node);
-    return null;
-  }
-  var builtIn = [
-    frameStrategy,
-    rectangleStrategy,
-    textStrategy,
-    ellipseStrategy,
-    lineStrategy,
-    imageStrategy,
-    instanceImageStrategy
-  ];
-  for (const s of builtIn) {
-    registerParserStrategy(s.nodeType, (n) => s.parse(n, parseFigmaNode));
-  }
-  function parseSelectedNodes() {
-    const selection = figma.currentPage.selection;
-    if (selection.length === 0) {
-      figma.notify("\uC120\uD0DD\uB41C \uB178\uB4DC\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.");
-      return [];
-    }
-    return selection.map((node) => parseFigmaNode(node)).filter((n) => n !== null);
-  }
+  // src/nodeparser/serializer.ts
   function toPlain(node) {
     const base = {
       id: node.id,
@@ -263,19 +233,41 @@
       base.imageUrl = node.imageUrl;
     return base;
   }
-  function serializeSelectedNodesToJSON(pretty = true) {
-    const nodes = parseSelectedNodes();
-    if (nodes.length === 0)
-      return null;
+  function serializeNodesToJSON(nodes, pretty = true) {
     const plain = nodes.map((n) => toPlain(n));
-    const json = pretty ? JSON.stringify(plain, null, 2) : JSON.stringify(plain);
-    try {
-      if (typeof figma !== "undefined" && figma.ui) {
-        figma.ui.postMessage({ type: "parsedTree", json });
-      }
-    } catch (e) {
+    return pretty ? JSON.stringify(plain, null, 2) : JSON.stringify(plain);
+  }
+
+  // src/nodeparser/FigmaNodeParser.ts
+  function parseFigmaNode(node) {
+    const handler = parserRegistry.get(node.type);
+    if (handler)
+      return handler(node);
+    return null;
+  }
+  var parserRegistry = /* @__PURE__ */ new Map();
+  function registerParserStrategy(nodeType, fn) {
+    parserRegistry.set(nodeType, fn);
+  }
+  var builtIn = [
+    frameStrategy,
+    rectangleStrategy,
+    textStrategy,
+    ellipseStrategy,
+    lineStrategy,
+    imageStrategy,
+    instanceImageStrategy
+  ];
+  for (const s of builtIn) {
+    registerParserStrategy(s.nodeType, (n) => s.parse(n, parseFigmaNode));
+  }
+  function parseSelectedNodes() {
+    const selection = figma.currentPage.selection;
+    if (selection.length === 0) {
+      figma.notify("\uC120\uD0DD\uB41C \uB178\uB4DC\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      return [];
     }
-    return json;
+    return selection.map((node) => parseFigmaNode(node)).filter((n) => n !== null);
   }
 
   // src/extract.ts
@@ -669,7 +661,7 @@ import androidx.glance.text.*`;
       code += "}";
       figma.showUI(__html__, { width: 600, height: 500 });
       figma.ui.postMessage({ type: "code", code });
-      const parsedJson = serializeSelectedNodesToJSON(true);
+      const parsedJson = serializeNodesToJSON(parseSelectedNodes(), true);
       if (parsedJson) {
         console.log("--- parsed tree JSON START ---");
         console.log(parsedJson);
