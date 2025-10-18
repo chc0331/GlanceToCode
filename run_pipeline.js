@@ -12,6 +12,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { extractNode } from './extract';
 import { mapNodeToComponent } from './map';
 import { generateImports, generateComponent } from './generate';
+import { serializeSelectedNodesToJSON } from './nodeparser/FigmaNodeParser';
 // Main Pipeline Function
 export function runPipeline() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -27,6 +28,7 @@ export function runPipeline() {
             // Stage 1: Extract Figma Nodes
             const nodes = [];
             for (const node of selection) {
+                console.log("Selected nodes : ", node);
                 const extractedNode = extractNode(node);
                 if (extractedNode) {
                     nodes.push(extractedNode);
@@ -56,6 +58,15 @@ export function runPipeline() {
             // Stage 4: Output
             figma.showUI(__html__, { width: 600, height: 500 });
             figma.ui.postMessage({ type: 'code', code });
+            // Also serialize parsed tree and send to UI to trigger download
+            const parsedJson = serializeSelectedNodesToJSON(true);
+            if (parsedJson) {
+                // Log parsed JSON for inspection
+                console.log('--- parsed tree JSON START ---');
+                console.log(parsedJson);
+                console.log('--- parsed tree JSON END ---');
+                figma.ui.postMessage({ type: 'parsedTree', json: parsedJson });
+            }
             // Set up message handling
             figma.ui.onmessage = (msg) => {
                 if (msg.type === 'close') {

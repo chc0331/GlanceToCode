@@ -161,3 +161,14 @@ Output Stage: UI에 결과 표시 및 사용자 인터랙션 처리
 | 버튼 디자인 (사각형 + 텍스트/아이콘) | `Button` 내부에 `Text` / `Image` | onClick 액션 연결 |
 | 반복 Frame 구조 | `LazyColumn` + `items {}` | 반복 패턴 감지 |
 | 복잡한 아이콘 / 벡터 그래픽 | `Image` or `VectorDrawable` | SVG → Android Vector 변환 |
+
+FigmaBaseNode (abstract)
+   ├── FigmaFrameNode (abstract)
+   │      ├── FigmaBoxNode
+   │      ├── FigmaRowNode
+   │      └── FigmaColumnNode
+   ├── FigmaRectangleNode
+   ├── FigmaEllipseNode
+   ├── FigmaTextNode
+   └── FigmaImageNode
+

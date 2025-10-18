@@ -1,7 +1,310 @@
 "use strict";
 (() => {
+  // src/figmanode/figmaNode.ts
+  var FigmaBaseNode = class {
+    constructor(id, name, visible, width, height, x, y, children) {
+      this.id = id;
+      this.name = name;
+      this.visible = visible;
+      this.width = width;
+      this.height = height;
+      this.x = x;
+      this.y = y;
+      this.children = children;
+    }
+    // abstract toGlance(): string;
+  };
+
+  // src/figmanode/figmaFrameNode.ts
+  var FigmaFrameNode = class extends FigmaBaseNode {
+    constructor(id, name, visible, width, height, x, y, children, backgroundColor) {
+      super(id, name, visible, width, height, x, y, children);
+      this.backgroundColor = backgroundColor;
+    }
+  };
+  var FigmaBoxNode = class extends FigmaFrameNode {
+  };
+  var FigmaRowNode = class extends FigmaFrameNode {
+  };
+  var FigmaColumnNode = class extends FigmaFrameNode {
+  };
+
+  // src/figmanode/figmaImageNode.ts
+  var FigmaImageNode = class extends FigmaBaseNode {
+    constructor(id, name, visible, width, height, x, y, imageUrl, contentScale) {
+      super(id, name, visible, width, height, x, y);
+      this.imageUrl = imageUrl;
+      this.contentScale = contentScale;
+    }
+  };
+
+  // src/figmanode/figmaEllipseNode.ts
+  var FigmaEllipseNode = class extends FigmaBaseNode {
+    constructor(id, name, visible, width, height, x, y, fillColor) {
+      super(id, name, visible, width, height, x, y);
+      this.fillColor = fillColor;
+    }
+  };
+
+  // src/figmanode/figmaRectangleNode.ts
+  var FigmaRectangleNode = class extends FigmaBaseNode {
+    constructor(id, name, visible, width, height, x, y, fillColor, cornerRadius) {
+      super(id, name, visible, width, height, x, y);
+      this.fillColor = fillColor;
+      this.cornerRadius = cornerRadius;
+    }
+  };
+
+  // src/figmanode/figmaTextNode.ts
+  var FigmaTextNode = class extends FigmaBaseNode {
+    constructor(id, name, visible, width, height, x, y, text, fontSize, color, textAlign) {
+      super(id, name, visible, width, height, x, y);
+      this.text = text;
+      this.fontSize = fontSize;
+      this.color = color;
+      this.textAlign = textAlign;
+    }
+  };
+
+  // src/nodeparser/FigmaNodeParser.ts
+  function parseFigmaNode(node) {
+    switch (node.type) {
+      case "FRAME":
+      case "GROUP":
+        return parseFrameNode(node);
+      case "RECTANGLE":
+        return parseRectangleNode(node);
+      case "TEXT":
+        return parseTextNode(node);
+      case "ELLIPSE":
+        return parseEllipseNode(node);
+      case "LINE":
+        return parseLineNode(node);
+      case "COMPONENT":
+      case "INSTANCE":
+        return parseImageNode(node);
+      default:
+        return null;
+    }
+  }
+  function parseFrameNode(node) {
+    const layoutMode = node.layoutMode || "NONE";
+    const children = "children" in node ? node.children.map((child) => parseFigmaNode(child)).filter((n) => n !== null) : [];
+    const backgroundColor = (() => {
+      if (!Array.isArray(node.backgrounds) || node.backgrounds.length === 0)
+        return void 0;
+      const b = node.backgrounds[0];
+      if (b && b.type === "SOLID")
+        return rgbToHex(b.color);
+      return void 0;
+    })();
+    if (layoutMode === "HORIZONTAL")
+      return new FigmaRowNode(
+        node.id,
+        node.name,
+        node.visible,
+        node.width,
+        node.height,
+        node.x,
+        node.y,
+        children,
+        backgroundColor
+      );
+    if (layoutMode === "VERTICAL")
+      return new FigmaColumnNode(
+        node.id,
+        node.name,
+        node.visible,
+        node.width,
+        node.height,
+        node.x,
+        node.y,
+        children,
+        backgroundColor
+      );
+    return new FigmaBoxNode(
+      node.id,
+      node.name,
+      node.visible,
+      node.width,
+      node.height,
+      node.x,
+      node.y,
+      children,
+      backgroundColor
+    );
+  }
+  function parseRectangleNode(node) {
+    const fillColor = (() => {
+      if (!Array.isArray(node.fills) || node.fills.length === 0)
+        return void 0;
+      const p = node.fills[0];
+      if (p && p.type === "SOLID")
+        return rgbToHex(p.color);
+      return void 0;
+    })();
+    return new FigmaRectangleNode(
+      node.id,
+      node.name,
+      node.visible,
+      node.width,
+      node.height,
+      node.x,
+      node.y,
+      fillColor,
+      void 0
+    );
+  }
+  function parseTextNode(node) {
+    const color = (() => {
+      if (!Array.isArray(node.fills) || node.fills.length === 0)
+        return "#000000";
+      const p = node.fills[0];
+      if (p && p.type === "SOLID")
+        return rgbToHex(p.color);
+      return "#000000";
+    })();
+    const fontSize = typeof node.fontSize === "number" ? node.fontSize : 14;
+    const align = node.textAlignHorizontal === "CENTER" ? "Center" : node.textAlignHorizontal === "RIGHT" ? "Right" : "Left";
+    return new FigmaTextNode(
+      node.id,
+      node.name,
+      node.visible,
+      node.width,
+      node.height,
+      node.x,
+      node.y,
+      node.characters,
+      fontSize,
+      color,
+      align
+    );
+  }
+  function parseImageNode(node) {
+    let imageUrl = "";
+    const fills = node.fills;
+    if (Array.isArray(fills) && fills.length > 0 && fills[0].imageHash) {
+      imageUrl = fills[0].imageHash;
+    }
+    return new FigmaImageNode(
+      node.id,
+      node.name,
+      node.visible,
+      node.width,
+      node.height,
+      node.x,
+      node.y,
+      imageUrl,
+      "Fit"
+    );
+  }
+  function parseEllipseNode(node) {
+    const fillColor = (() => {
+      const fills = node.fills;
+      if (!Array.isArray(fills) || fills.length === 0)
+        return void 0;
+      const p = fills[0];
+      if (p && p.type === "SOLID")
+        return rgbToHex(p.color);
+      return void 0;
+    })();
+    return new FigmaEllipseNode(
+      node.id,
+      node.name,
+      node.visible,
+      node.width,
+      node.height,
+      node.x,
+      node.y,
+      fillColor
+    );
+  }
+  function parseLineNode(node) {
+    const strokeColor = (() => {
+      const strokes = node.strokes;
+      if (!Array.isArray(strokes) || strokes.length === 0)
+        return void 0;
+      const s = strokes[0];
+      if (s && s.type === "SOLID")
+        return rgbToHex(s.color);
+      return void 0;
+    })();
+    return new FigmaRectangleNode(
+      node.id,
+      node.name,
+      node.visible,
+      // width/height might be zero for lines; ensure at least 1
+      node.width || 1,
+      node.height || 1,
+      node.x,
+      node.y,
+      strokeColor,
+      void 0
+    );
+  }
+  function rgbToHex(color) {
+    const r = Math.round(color.r * 255).toString(16).padStart(2, "0");
+    const g = Math.round(color.g * 255).toString(16).padStart(2, "0");
+    const b = Math.round(color.b * 255).toString(16).padStart(2, "0");
+    return `#${r}${g}${b}`;
+  }
+  function parseSelectedNodes() {
+    const selection = figma.currentPage.selection;
+    if (selection.length === 0) {
+      figma.notify("\uC120\uD0DD\uB41C \uB178\uB4DC\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      return [];
+    }
+    return selection.map((node) => parseFigmaNode(node)).filter((n) => n !== null);
+  }
+  function toPlain(node) {
+    const base = {
+      id: node.id,
+      name: node.name,
+      visible: node.visible,
+      width: node.width,
+      height: node.height,
+      x: node.x,
+      y: node.y
+    };
+    if (node.children) {
+      base.children = node.children.map((c) => toPlain(c));
+    }
+    if (node.backgroundColor)
+      base.backgroundColor = node.backgroundColor;
+    if (node.fillColor)
+      base.fillColor = node.fillColor;
+    if (node.text)
+      base.text = node.text;
+    if (node.fontSize)
+      base.fontSize = node.fontSize;
+    if (node.color)
+      base.color = node.color;
+    if (node.imageUrl)
+      base.imageUrl = node.imageUrl;
+    return base;
+  }
+  function serializeSelectedNodesToJSON(pretty = true) {
+    const nodes = parseSelectedNodes();
+    if (nodes.length === 0)
+      return null;
+    const plain = nodes.map((n) => toPlain(n));
+    const json = pretty ? JSON.stringify(plain, null, 2) : JSON.stringify(plain);
+    try {
+      if (typeof figma !== "undefined" && figma.ui) {
+        figma.ui.postMessage({ type: "parsedTree", json });
+      }
+    } catch (e) {
+    }
+    return json;
+  }
+
   // src/extract.ts
   function extractNode(node) {
+    const parsed = parseFigmaNode(node);
+    console.log("Parsed nodes : ", parsed);
+    if (parsed) {
+      return mapFigmaBaseNodeToFigmaNode(parsed);
+    }
     const baseNode = {
       id: node.id,
       type: node.type,
@@ -37,6 +340,40 @@
       baseNode.children = node.children.map((child) => extractNode(child)).filter((child) => child !== null);
     }
     return baseNode;
+  }
+  function mapFigmaBaseNodeToFigmaNode(n) {
+    const out = {
+      id: n.id,
+      type: n.constructor && n.constructor.name ? n.constructor.name : "Node",
+      name: n.name,
+      x: Math.round(n.x || 0),
+      y: Math.round(n.y || 0),
+      width: Math.round(n.width || 0),
+      height: Math.round(n.height || 0)
+    };
+    if (n.fillColor)
+      out.fills = [{ type: "SOLID", color: hexToRgb(n.fillColor) }];
+    if (n.backgroundColor)
+      out.fills = [{ type: "SOLID", color: hexToRgb(n.backgroundColor) }];
+    if (n.text) {
+      out.characters = n.text;
+      out.fontSize = n.fontSize;
+    }
+    if (n.children && Array.isArray(n.children)) {
+      out.children = n.children.map((c) => mapFigmaBaseNodeToFigmaNode(c));
+    }
+    return out;
+  }
+  function hexToRgb(hex) {
+    if (!hex)
+      return void 0;
+    const h = hex.replace("#", "");
+    if (h.length !== 6)
+      return void 0;
+    const r = parseInt(h.substring(0, 2), 16) / 255;
+    const g = parseInt(h.substring(2, 4), 16) / 255;
+    const b = parseInt(h.substring(4, 6), 16) / 255;
+    return { r, g, b };
   }
 
   // src/map.ts
@@ -352,6 +689,13 @@ import androidx.glance.text.*`;
       code += "}";
       figma.showUI(__html__, { width: 600, height: 500 });
       figma.ui.postMessage({ type: "code", code });
+      const parsedJson = serializeSelectedNodesToJSON(true);
+      if (parsedJson) {
+        console.log("--- parsed tree JSON START ---");
+        console.log(parsedJson);
+        console.log("--- parsed tree JSON END ---");
+        figma.ui.postMessage({ type: "parsedTree", json: parsedJson });
+      }
       figma.ui.onmessage = (msg) => {
         if (msg.type === "close") {
           figma.closePlugin();

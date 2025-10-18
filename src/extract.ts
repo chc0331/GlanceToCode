@@ -6,8 +6,19 @@
 // - 재귀적으로 자식 노드도 추출하여 트리 구조 생성
 // ======================================================
 import { FigmaNode } from './types';
+import { parseFigmaNode } from './nodeparser/FigmaNodeParser';
+import { FigmaBaseNode } from './figmanode/figmaNode';
 
 export function extractNode(node: SceneNode): FigmaNode | null {
+  // Try to use the richer parser which creates figmanode class instances,
+  // then map that structure back into the pipeline's lightweight `FigmaNode` type.
+  const parsed = parseFigmaNode(node);
+  console.log("Parsed nodes : ", parsed);
+  if (parsed) {
+    return mapFigmaBaseNodeToFigmaNode(parsed);
+  }
+
+  // Fallback: preserve original light-weight extraction behavior
   const baseNode: FigmaNode = {
     id: node.id,
     type: node.type,
@@ -50,4 +61,41 @@ export function extractNode(node: SceneNode): FigmaNode | null {
   }
 
   return baseNode;
+}
+
+function mapFigmaBaseNodeToFigmaNode(n: FigmaBaseNode): FigmaNode {
+  const out: FigmaNode = {
+    id: n.id,
+    type: (n as any).constructor && (n as any).constructor.name ? (n as any).constructor.name : 'Node',
+    name: n.name,
+    x: Math.round(n.x || 0),
+    y: Math.round(n.y || 0),
+    width: Math.round(n.width || 0),
+    height: Math.round(n.height || 0),
+  };
+
+  // map known properties
+  if ((n as any).fillColor) out.fills = [{ type: 'SOLID', color: hexToRgb((n as any).fillColor) } as any];
+  if ((n as any).backgroundColor) out.fills = [{ type: 'SOLID', color: hexToRgb((n as any).backgroundColor) } as any];
+  if ((n as any).text) {
+    out.characters = (n as any).text;
+    out.fontSize = (n as any).fontSize;
+  }
+
+  if ((n as any).children && Array.isArray((n as any).children)) {
+    out.children = (n as any).children.map((c: FigmaBaseNode) => mapFigmaBaseNodeToFigmaNode(c));
+  }
+
+  return out;
+}
+
+function hexToRgb(hex?: string): RGB | undefined {
+  if (!hex) return undefined;
+  // remove '#'
+  const h = hex.replace('#', '');
+  if (h.length !== 6) return undefined;
+  const r = parseInt(h.substring(0, 2), 16) / 255;
+  const g = parseInt(h.substring(2, 4), 16) / 255;
+  const b = parseInt(h.substring(4, 6), 16) / 255;
+  return { r, g, b } as RGB;
 }
